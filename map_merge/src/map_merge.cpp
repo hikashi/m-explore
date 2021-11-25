@@ -42,6 +42,8 @@
 #include <ros/console.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include <boost/algorithm/string.hpp>
+
 namespace map_merge
 {
 MapMerge::MapMerge() : subscriptions_size_(0)
@@ -293,7 +295,8 @@ void MapMerge::partialMapUpdate(
 }
 
 std::string MapMerge::robotNameFromTopic(const std::string& topic)
-{
+{  
+  printf("===== working on %s =====\n", ros::names::parentNamespace(topic).c_str());
   return ros::names::parentNamespace(topic);
 }
 
@@ -306,8 +309,23 @@ bool MapMerge::isRobotMapTopic(const ros::master::TopicInfo& topic)
       ros::names::append(topic_namespace, robot_map_topic_) == topic.name;
 
   /* test whether topic contains *anywhere* robot namespace */
-  auto pos = topic.name.find(robot_namespace_);
-  bool contains_robot_namespace = pos != std::string::npos;
+  /* breakign the string into delimeterr and find the topic name based on the topic list*/
+  // std::string token = robot_namespace_.substr(0, s.find(","));
+  // now working on the loop for going through the list
+  // auto pos = topic.name.find(robot_namespace_);
+  // bool contains_robot_namespace = pos != std::string::npos;
+  bool contains_robot_namespace;
+  
+  std::vector<std::string> tokens;
+  boost::split(tokens, robot_namespace_, boost::is_any_of(","));
+
+  for (const auto& token : tokens){    
+    auto pos = topic.name.find(token);
+    contains_robot_namespace = pos != std::string::npos;
+    if (contains_robot_namespace){
+      break;
+    }
+  }
 
   /* we support only occupancy grids as maps */
   bool is_occupancy_grid = topic.datatype == "nav_msgs/OccupancyGrid";
